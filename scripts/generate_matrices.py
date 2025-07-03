@@ -3,72 +3,72 @@
 from sympy import Matrix, cos, sin, Symbol, simplify, trigsimp, preview, pi
 from sympy.interactive import printing
 
+# To make display pretty
+printing.init_printing(use_latex=True)
 
-# To make display prety
-printing.init_printing(use_latex = True)
+class DHCalculator:
+    def __init__(self):
+        # Define generic DH symbols
+        self.theta_i = Symbol("theta_i")
+        self.alpha_i = Symbol("alpha_i")
+        self.r_i = Symbol("r_i")
+        self.d_i = Symbol("d_i")
 
-theta_i = Symbol("theta_i")
-alpha_i = Symbol("alpha_i")
-r_i = Symbol("r_i")
-d_i = Symbol("d_i")
+        # Define the generic DH matrix
+        self.DH_generic = Matrix([
+            [cos(self.theta_i), -sin(self.theta_i)*cos(self.alpha_i),  sin(self.theta_i)*sin(self.alpha_i), self.r_i*cos(self.theta_i)],
+            [sin(self.theta_i),  cos(self.theta_i)*cos(self.alpha_i), -cos(self.theta_i)*sin(self.alpha_i), self.r_i*sin(self.theta_i)],
+            [0,                  sin(self.alpha_i),                   cos(self.alpha_i),                  self.d_i],
+            [0,                  0,                                   0,                                  1]
+        ])
+        # Simplified generic DH matrix
+        self.DH_simplified = simplify(self.DH_generic)
 
-DH_Matrix_Generic = Matrix([[cos(theta_i), -sin(theta_i)*cos(alpha_i), sin(theta_i)*sin(alpha_i), r_i*cos(theta_i)],
-                            [sin(theta_i), cos(theta_i)*cos(alpha_i), -cos(theta_i)*sin(alpha_i), r_i*sin(theta_i)],
-                            [0,            sin(alpha_i),               cos(alpha_i),              d_i],
-                            [0,            0,                          0,                         1]])
+    def preview_matrix(self, matrix, filename, dvioptions=['-D', '300']):
+        preview(matrix, viewer='file', filename=filename, dvioptions=dvioptions)
 
-result_simpl = simplify(DH_Matrix_Generic)
+    def compute(self, thetas, alphas, rs, ds):
+        A_mats = []
+        for theta, alpha, r, d in zip(thetas, alphas, rs, ds):
+            A = self.DH_generic.subs({
+                self.theta_i: theta,
+                self.alpha_i: alpha,
+                self.r_i: r,
+                self.d_i: d
+            })
+            A_mats.append(A)
 
-# Save to local file
-preview(result_simpl, viewer='file', filename="out.png", dvioptions=['-D','300'])
+        # Compute raw overall transform A0_n
+        A_total = A_mats[0]
+        for mat in A_mats[1:]:
+            A_total = A_total * mat
+        # Simplified overall transform
+        A_total_simplified = trigsimp(A_total)
 
+        return A_mats, A_total, A_total_simplified
 
-# Now create A01, A12, A23
+if __name__ == "__main__":
+    # Instantiate the calculator
+    calc = DHCalculator()
 
-theta_1 = Symbol("theta_1")
-theta_2 = Symbol("theta_2")
-theta_3 = Symbol("theta_3")
+    # Preview the generic simplified DH matrix
+    calc.preview_matrix(calc.DH_simplified, "out.png")
 
+    # Define specific parameters for a 3-joint planar robot
+    theta_values = [Symbol("theta_1"), Symbol("theta_2"), Symbol("theta_3")]
+    alpha_values = [pi/2, 0, 0]
+    r_values     = [0, Symbol("r_2"), Symbol("r_3")]
+    d_values     = [0, 0, 0]
 
-alpha_planar = 0.0
+    # Compute A0_1, A1_2, A2_3, A0_3 and its simplified form
+    A_mats, A0_3, A0_3_simplified = calc.compute(theta_values, alpha_values, r_values, d_values)
+    A0_1, A1_2, A2_3 = A_mats
 
-alpha_1 = pi / 2
-alpha_2 = alpha_planar
-alpha_3 = alpha_planar
+    # Preview individual A matrices
+    calc.preview_matrix(A0_1, "A0_1.png")
+    calc.preview_matrix(A1_2, "A1_2.png")
+    calc.preview_matrix(A2_3, "A2_3.png")
 
-r_planar = 0.0
-
-r_1 = r_planar
-r_2 = Symbol("r_2")
-r_3 = Symbol("r_3")
-
-d_planar = 0.0
-
-d_1 = d_planar
-d_2 = d_planar
-d_3 = d_planar
-
-A0_1 = DH_Matrix_Generic.subs(r_i,r_1).subs(alpha_i,alpha_1).subs(d_i,d_1).subs(theta_i, theta_1)
-A1_2 = DH_Matrix_Generic.subs(r_i,r_2).subs(alpha_i,alpha_2).subs(d_i,d_2).subs(theta_i, theta_2)
-A2_3 = DH_Matrix_Generic.subs(r_i,r_3).subs(alpha_i,alpha_3).subs(d_i,d_3).subs(theta_i, theta_3)
-
-A0_3 = A0_1 * A1_2 * A2_3
-A0_3_simplified = trigsimp(A0_3)
-
-# We save
-
-preview(A0_1, viewer='file', filename="A0_1.png", dvioptions=['-D','300'])
-preview(A1_2, viewer='file', filename="A1_2.png", dvioptions=['-D','300'])
-preview(A2_3, viewer='file', filename="A2_3.png", dvioptions=['-D','300'])
-preview(A0_3, viewer='file', filename="A0_3.png", dvioptions=['-D','300'])
-preview(A0_3_simplified, viewer='file', filename="A0_3_simplified.png", dvioptions=['-D','300'])
-
-# A0_2 = A0_1 * A1_2
-# A0_2_simplified = trigsimp(A0_2)
-# preview(A0_2, viewer='file', filename="A0_2.png", dvioptions=['-D','300'])
-# preview(A0_2_simplified, viewer='file', filename="A0_2_simplified.png", dvioptions=['-D','300'])
-
-# Added for IK
-# A0_2 = A0_1 * A1_2
-# A0_2_simplified = trigsimp(A0_2)
-# preview(A02, viewer='file', filename="A0_2.png", dvioptions=['-D','300'])
+    # Preview overall transforms
+    calc.preview_matrix(A0_3, "A0_3.png")
+    calc.preview_matrix(A0_3_simplified, "A0_3_simplified.png")
