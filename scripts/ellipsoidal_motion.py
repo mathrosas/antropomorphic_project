@@ -20,7 +20,7 @@ class EE_Client(object):
 
         
 
-        self.pub_end_effector_commads= rospy.Publisher("/ee_pose_commands", EndEffector, queue_size=1)
+        self.pub_end_effector_commands= rospy.Publisher("/ee_pose_commands", EndEffector, queue_size=1)
 
 
 
@@ -176,7 +176,7 @@ class EE_Client(object):
 
             print("Ellipse Point="+str(ee_pose)+", elbow="+str(elbow_policy))
 
-            self.pub_end_effector_commads.publish(ee_msg)
+            self.pub_end_effector_commands.publish(ee_msg)
 
 
 

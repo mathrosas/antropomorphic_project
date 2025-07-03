@@ -6,7 +6,7 @@ from sympy.interactive import printing
 # To make display pretty
 printing.init_printing(use_latex=True)
 
-class DHCalculator:
+class GenerateMatrices:
     def __init__(self):
         # Define generic DH symbols
         self.theta_i = Symbol("theta_i")
@@ -49,7 +49,7 @@ class DHCalculator:
 
 if __name__ == "__main__":
     # Instantiate the calculator
-    calc = DHCalculator()
+    calc = GenerateMatrices()
 
     # Preview the generic simplified DH matrix
     calc.preview_matrix(calc.DH_simplified, "out.png")
